@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Favorite, Planet, Character
 #from models import Person
 
 app = Flask(__name__)
@@ -36,14 +36,67 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
+
+@app.route('/user', methods=['POST'])
+def add_user():
+    password = request.json['password']
+    firstname = request.json['firstname']
+    email = request.json['email']
+    is_active = request.json['is_active']
+    user = User( password=password, firstname=firstname, email=email, is_active=is_active)
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({"message": "User added successfully", "user": {"email": email, "is_active": is_active}}), 201
+
+
+@app.route('/login', methods=['POST'])
+def log_user():
+    email = request.json['email']
+    password = request.json['password']
+    
+    user_exists = User.query.filter_by(email=email, password=password).first()
+    print("user_exists", user_exists)
+    
+    if user_exists:
+        user_exists = user_exists.serialize()
+        return jsonify(user_exists), 200
+    else:
+        return "User not found", 404
+
+
+
+
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+def favorite_planet():
+    body = request.json
+    id = body['id']
+    favorite_planet = body['favorite_planet']
+    user_to_fav = body[user_to_fav]
+    user_to_fav_planet = body[user_to_fav_planet]
+
+    user_fav = User.query.filter_by(id=id, favorite_planet=favorite_planet).first()
+
+
+
+@app.route('/favorite/char/<int:character_id>', methods=['POST'])
+def favorite_character():
+    body = {
+        "name": "",
+        "user_id": "5", 
+        "planet_id": "0",
+        "char_id": "23" 
     }
+    body = request.json
 
-    return jsonify(response_body), 200
+    fave = Favorite(name=body['name'], user_to_fav=body['user_id'], )
+    db.session.add(fave)
+    db.session.commit() 
+
+    user_fav = User.query.filter_by().first()
+
+
+
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
