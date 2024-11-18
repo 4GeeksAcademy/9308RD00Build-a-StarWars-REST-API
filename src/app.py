@@ -1,7 +1,7 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
-import os
+import os, requests
 from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
 from flask_swagger import swagger
@@ -38,6 +38,52 @@ def sitemap():
 
 
 
+
+@app.route('/get/initial', methods=['GET'])
+def initial():
+    result_char = Character.query.all()
+    if not result_char:
+        response = requests.get("https://swapi.dev/api/people")
+        characters = response.json()['results']
+
+        for pers in characters:
+            char_id = pers['url'].split('/')[-2]
+            char = Character(name = pers['name'], swapi_id = char_id, url = pers['url'], gender = pers['gender'], eye_color = pers['eye_color'], hair_color = pers['hair_color'] )
+            db.session.add(char)
+            db.session.commit()
+    
+    character_records = Character.query.all()
+    character_records = list(map(lambda x: x.serialize(), character_records))
+    
+
+    result_planet = Planet.query.all()
+    if not result_planet:
+        response = requests.get("https://swapi.dev/api/planets")
+        planets = response.json()['results']
+
+        for planet in planets:
+            plan_id = planet['url'].split('/')[-2]
+            plan = Planet(name = planet['name'], swapi_id = plan_id, url = planet['url'], population = planet['population'], terrain = planet['terrain'])
+            db.session.add(plan)
+            db.session.commit()
+    
+    planet_records = Planet.query.all()
+    planet_records = list(map(lambda x: x.serialize(), planet_records))
+
+
+
+    records = {
+        "character_records": character_records,
+        "planet_records": planet_records
+    }
+
+    print('record: ', records)
+    return jsonify(records)
+
+
+
+
+
 @app.route('/user', methods=['POST'])
 def add_user():
     password = request.json['password']
@@ -67,33 +113,73 @@ def log_user():
 
 
 
-@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+
+@app.route('/favorite/plan', methods=['POST'])
 def favorite_planet():
-    body = request.json
-    id = body['id']
-    favorite_planet = body['favorite_planet']
-    user_to_fav = body[user_to_fav]
-    user_to_fav_planet = body[user_to_fav_planet]
-
-    user_fav = User.query.filter_by(id=id, favorite_planet=favorite_planet).first()
-
-
-
-@app.route('/favorite/char/<int:character_id>', methods=['POST'])
-def favorite_character():
-    body = {
-        "name": "",
-        "user_id": "5", 
-        "planet_id": "0",
-        "char_id": "23" 
-    }
+    
     body = request.json
 
-    fave = Favorite(name=body['name'], user_to_fav=body['user_id'], )
+    fave = Favorite(name=body['name'], user_id=body['user_id'], planet_id=body['planet_id'], char_id=body['char_id'])
     db.session.add(fave)
     db.session.commit() 
+    if fave:
+        fave = fave.serialize()
+        return jsonify(fave), 200
+    else:
+        return "User not found", 404
+    
 
-    user_fav = User.query.filter_by().first()
+
+
+@app.route('/favorite/char', methods=['POST'])
+def favorite_character():
+    
+    body = request.json
+
+    fave = Favorite(name=body['name'], user_id=body['user_id'], planet_id=body['planet_id'], char_id=body['char_id'])
+    db.session.add(fave)
+    db.session.commit() 
+    if fave:
+        fave = fave.serialize()
+        return jsonify(fave), 200
+    else:
+        return "User not found", 404
+    
+
+
+@app.route('/favorite/planet/<int:id>', methods=['DELETE'])
+def del_fav_plan(id):
+    planet = Favorite.query.get(id)
+    db.session.delete(planet)
+    db.session.commit()
+
+
+@app.route('/favorite/planet/', methods=['GET'])
+def fav_plan():
+    res = Favorite.query.all()
+    
+    if res:
+        res  = res.serialize()
+        return jsonify(res), 200
+    else:
+        return "User not found", 404
+
+    
+    
+
+
+
+
+
+
+
+@app.route('/favorite/char/<int:id>',methods=['DELETE'])
+def del_fav_char(id):
+    character = Favorite.query.get(id)
+    db.session.delete(character)
+    db.session.commit()
+
+
 
 
 

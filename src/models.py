@@ -39,33 +39,82 @@ class User(db.Model):
         }
 
 
+
+
+
+
+
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(250), nullable=False)
     gender = db.Column(db.String(250), nullable=False)
     eye_color = db.Column(db.String(250), nullable=False)
     hair_color = db.Column(db.String(250), nullable=False)
+    swapi_id = db.Column(db.Integer)
+    url = db.Column(db.String(250), nullable=False)
+
+    def __repr__(self):
+        return '<User %r>' % self.name
+
+    def serialize(self):
+        return {
+            "id": self.id, 
+            "name": self.name,
+            "gender": self.gender,
+            "eye_color": self.eye_color,
+            "hair_color": self.hair_color,
+            "swapi_id": self.swapi_id,
+            "url": self.url  
+        }
 
 
 
 class Planet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(250), nullable=False)
-    population = db.Column(db.Integer)
+    population = db.Column(db.String(250))
     terrain = db.Column(db.String(250), nullable=False)
+    swapi_id = db.Column(db.Integer)
+    url = db.Column(db.String(250), nullable=False)
+
+
+    def __repr__(self):
+        return '<User %r>' % self.name
+
+    def serialize(self):
+        return {
+            "id": self.id, 
+            "name": self.name,
+            "population": self.population,
+            "terrain": self.terrain,
+            "swapi_id": self.swapi_id,
+            "url": self.url  
+        }
 
         
 
 class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(250))
-    user_to_fav = db.Column(db.Integer, db.ForeignKey('user.id')) 
-    user_to_fav_planet = db.Column(db.Integer, db.ForeignKey('planet.id'))
-    user_to_fav_char = db.Column(db.Integer, db.ForeignKey('character.id')) 
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
+    planet_id = db.Column(db.Integer, db.ForeignKey('planet.id'), nullable=True)
+    char_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=True) 
     user = db.relationship(User)
     character = db.relationship(Character)
     planet = db.relationship(Planet)
 
+
+    def __repr__(self):
+
+        return 'Favorite %r>' % self.name
+    def serialize(self):
+        return {
+            "id": self.id, 
+            "name": self.name,
+            "user_id": self.user_id,
+            "planet_id": self.planet_id,
+            "char_id": self.char_id
+        }
 
 
 
